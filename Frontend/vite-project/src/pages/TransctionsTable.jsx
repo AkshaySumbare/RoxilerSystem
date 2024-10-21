@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Table, TableCell, TableHead, TableHeadCell } from "flowbite-react";
+import React, { useEffect, useRef, useState } from "react";
+import ReactPaginate from "react-paginate";
 import "./transction.css";
 
 export const TransctionsTable = () => {
@@ -7,9 +7,12 @@ export const TransctionsTable = () => {
   const [search, setSearch] = useState("");
   const [sortValue, setSortValue] = useState("");
   const [monthData, setMonthData] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageLimit] = useState(10);
+  const [limit, setLimit] = useState(10);
+  const [pageCount, setPageCount] = useState(1);
+  const currentPage = useRef();
 
+
+  
   const sortOptions = ["title", "description", "price", "category"];
   const MonthWiseData = [
     "January",
@@ -26,25 +29,18 @@ export const TransctionsTable = () => {
     "December",
   ];
 
-  const fetchProducts = async (page, limit, increase) => {
+  const fetchProducts = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:3000/api/products/getproducts?page=${page}&limit=${limit}`
-      );
+      const res = await fetch(`http://localhost:3000/api/products/getproducts`);
       const data = await res.json();
 
       if (res.ok) {
         setProducts(data.myData);
-        setCurrentPage(currentPage + increase);
       }
     } catch (error) {
       console.log(error);
     }
   };
-
-  useEffect(() => {
-    fetchProducts(0, 10, 0);
-  }, []);
 
   // ********************************Get Sort Data********************************
 
@@ -75,74 +71,12 @@ export const TransctionsTable = () => {
         `http://localhost:3000/api/products/monthdata?month=${value}`
       );
       const data = await res.json();
-      console.log(data);
 
       if (res.ok) {
         setProducts(data);
       }
     } catch (error) {
       console.log(error);
-    }
-  };
-
-  //  *****************************pagination Functionality*************************
-  const showPagination = () => {
-    if (currentPage === 0) {
-      return (
-        <>
-          <div className="flex space-x-5 ">
-            <button className="border-2 black w-20 text-black">1</button>
-            <button
-              className="border-2 black w-20 text-black bg-green-500"
-              onClick={() => fetchProducts(2, 10, 1)}
-            >
-              Next
-            </button>
-          </div>
-        </>
-      );
-    } else if (currentPage < pageLimit - 1 && products.length === pageLimit) {
-      return (
-        <>
-          <div className="flex space-x-5 ">
-            <button
-              className="border-2 black w-20 text-black bg-green-500"
-              onClick={() =>
-                fetchProducts((currentPage - 1) * 10, currentPage * 10, -1)
-              }
-            >
-              Prev
-            </button>
-            <button className="border-2 black w-20 text-black">
-              {currentPage + 1}
-            </button>
-            <button
-              className="border-2 black w-20 text-black bg-green-500"
-              onClick={() =>
-                fetchProducts(currentPage + 1, (currentPage + 2) * 10, 1)
-              }
-            >
-              Next
-            </button>
-          </div>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <div className="flex space-x-5 ">
-            <button
-              className="border-2 black w-20 text-black bg-green-500"
-              onClick={() => fetchProducts(10, 20, -1)}
-            >
-              Prev
-            </button>
-            <button className="border-2 black w-20 text-black">
-              {currentPage + 1}
-            </button>
-          </div>
-        </>
-      );
     }
   };
 
@@ -155,7 +89,6 @@ export const TransctionsTable = () => {
         `http://localhost:3000/api/products/getproducts?title=${search}`
       );
       const data = await res.json();
-      console.log(data);
 
       if (res.ok) {
         setProducts(data.myData);
@@ -164,10 +97,41 @@ export const TransctionsTable = () => {
       console.log(error);
     }
   };
+
   useEffect(() => {
     handleSearch();
   }, [search]);
 
+  useEffect(() => {
+    fetchProducts();
+    currentPage.current = 1;
+
+    getPaginatedUser();
+  }, []);
+
+  // ***********************
+
+  const handlePageClick = async (e) => {
+    console.log(e);
+    currentPage.current = e.selected + 1;
+    getPaginatedUser();
+  };
+  const getPaginatedUser = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/products/paginate?page=${currentPage.current}&limit=${limit}`
+      );
+      const data = await res.json();
+
+      setPageCount(data.pageCount);
+
+      if (res.ok) {
+        setProducts(data.paginateData);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <>
       <div className="border-2 black h-full ">
@@ -257,13 +221,15 @@ export const TransctionsTable = () => {
               </tr>
             </thead>
             <tbody>
+              
               {products.length > 0 &&
                 products != undefined &&
+                
                 products.map((product, index) => {
                   return (
                     <>
                       <tr key={index}>
-                        <td>{index + 1}</td>
+                        <td>{(index+1)}</td>
 
                         <td className="">
                           {product.title.length > 25
@@ -291,9 +257,26 @@ export const TransctionsTable = () => {
                 })}
             </tbody>
           </table>
-          <div className="mx-auto p-14 max-w-[400px] align-middle">
-            {showPagination()}
-          </div>
+          <ReactPaginate
+            className="flex space-x-5 justify-center mt-4 mb-8  "
+            breakLabel="..."
+            nextLabel="next >"
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={5}
+            pageCount={pageCount}
+            previousLabel="< previous"
+            renderOnZeroPageCount={null}
+            marginPagesDisplayed={2}
+            containerClassName="pagination justify-content-center"
+            pageClassName="page-item"
+            pageLinkClassName="page-link"
+            previousClassName="page-item"
+            previousLinkClassName="page-link"
+            nextClassName="page-item"
+            nextLinkClassName="page-link"
+            activeClassName="active"
+            forcePage={currentPage.current - 1}
+          />
         </div>
       </div>
     </>

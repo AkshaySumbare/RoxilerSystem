@@ -4,15 +4,13 @@ import "./transction.css";
 
 export const TransctionsTable = () => {
   const [products, setProducts] = useState([]);
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortValue, setSortValue] = useState("");
   const [monthData, setMonthData] = useState("");
   const [limit, setLimit] = useState(10);
   const [pageCount, setPageCount] = useState(1);
   const currentPage = useRef();
 
-
-  
   const sortOptions = ["title", "description", "price", "category"];
   const MonthWiseData = [
     "January",
@@ -82,32 +80,20 @@ export const TransctionsTable = () => {
 
   //*****************search **************************************/
   const handleSearch = async (e) => {
-    let value = e.target.value;
-    setSearch(value);
+    setSearchQuery(e.target.value);
     try {
       const res = await fetch(
-        `http://localhost:3000/api/products/getproducts?title=${search}`
+        `http://localhost:3000/api/products/getsearch?search=${searchQuery}`
       );
       const data = await res.json();
 
       if (res.ok) {
-        setProducts(data.myData);
+        setProducts(data);
       }
     } catch (error) {
       console.log(error);
     }
   };
-
-  useEffect(() => {
-    handleSearch();
-  }, [search]);
-
-  useEffect(() => {
-    fetchProducts();
-    currentPage.current = 1;
-
-    getPaginatedUser();
-  }, []);
 
   // ***********************
 
@@ -132,6 +118,16 @@ export const TransctionsTable = () => {
       console.log(error);
     }
   };
+  useEffect(() => {
+    handleSearch();
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchProducts();
+    currentPage.current = 1;
+    getPaginatedUser();
+  }, []);
+
   return (
     <>
       <div className="border-2 black h-full ">
@@ -201,7 +197,7 @@ export const TransctionsTable = () => {
                 type="text"
                 placeholder="Search"
                 className="border-2 black mb-4 p-1"
-                value={search}
+                value={searchQuery}
                 onChange={handleSearch}
               />
             </form>
@@ -221,15 +217,13 @@ export const TransctionsTable = () => {
               </tr>
             </thead>
             <tbody>
-              
               {products.length > 0 &&
                 products != undefined &&
-                
                 products.map((product, index) => {
                   return (
                     <>
                       <tr key={index}>
-                        <td>{(index+1)}</td>
+                        <td>{index + 1}</td>
 
                         <td className="">
                           {product.title.length > 25

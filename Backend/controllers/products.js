@@ -2,23 +2,9 @@ const Product = require("../models/product");
 
 // ****************Create an API to list the all transactions
 const getAllProducts = async (req, res) => {
-  const { category, title, price, description, sort, select } = req.query;
-  const queryObject = {};
-  if (category) {
-    queryObject.category = { $regex: category, $options: "i" };
-  }
+  const { sort, select } = req.query;
 
-  if (title) {
-    queryObject.title = { $regex: title, $options: "i" };
-  }
-  if (description) {
-    queryObject.description = { $regex: description, $options: "i" };
-  }
-  if (price) {
-    queryObject.price = { $regex: price, $options: "i" };
-  }
-
-  let result = Product.find(queryObject);
+  let result = Product.find();
 
   if (sort) {
     let sortFix = sort.replace(",", " ");
@@ -30,17 +16,31 @@ const getAllProducts = async (req, res) => {
     result = result.select(selectFix);
   }
 
-  let page = Number(req.query.page) || 1;
-  let limit = Number(req.query.limit) || 10;
-
-  let skip = (page - 1) * limit;
-
-  result = result.skip(skip).limit(limit);
-
   const myData = await result;
 
   res.status(200).json({ myData, nbHits: myData.length });
 };
+
+//****************Search Data************************** */
+
+const getSearchData = async (req, res) => {
+  let query = {};
+  const searchData = req.query.search;
+  if (searchData) {
+    query = {
+      $or: [
+        { title: { $regex: searchData, $options: "i" } },
+        { description: { $regex: searchData, $options: "i" } },
+        { category: { $regex: searchData, $options: "i" } },
+      ],
+    };
+  }
+
+  let result = await Product.find(query);
+  res.json(result);
+};
+
+//**********************Pagination********************** */
 
 const Pagination = async (req, res) => {
   const allProducts = await Product.find({});
@@ -67,6 +67,7 @@ const Pagination = async (req, res) => {
   }
 
   results.paginateData = allProducts.slice(startIndex, lastIndex);
+
   res.json(results);
 };
 
@@ -309,6 +310,7 @@ const getCategoryData = async (req, res) => {
 
 module.exports = {
   getAllProducts,
+  getSearchData,
   Pagination,
   getStatisticsData,
   getbarData,

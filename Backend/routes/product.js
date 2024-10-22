@@ -4,6 +4,7 @@ const getdata = require("../controllers/products");
 const router = express.Router();
 
 router.route("/getproducts").get(getdata.getAllProducts);
+router.route("/getsearch").get(getdata.getSearchData);
 router.route("/paginate").get(getdata.Pagination);
 router.route("/statistics").get(getdata.getStatisticsData);
 router.route("/monthdata").get(getdata.getDataOfMonth);
